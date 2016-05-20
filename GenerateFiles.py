@@ -20,7 +20,7 @@ if __name__ == "__main__":
     maxArrivalInc = 5
 
     for fn in range(0,maxFiles):
-        with open(directory+"/" + str(fn) + ".csv", "w") as f:
+        with open(directory+"/" + str(fn) + ".txt", "w") as f:
             # Initialize for each file
             pid = 0
             arrival = 0

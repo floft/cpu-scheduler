@@ -47,7 +47,7 @@ if __name__ == "__main__":
     #
     # Generate example output file for initial plotting
     #
-    with open(directory+"/example_output.txt", "w") as f:
+    with open(directory+"/example_output.csv", "w") as f:
         # Initialize for each file
         arrival = 0
 

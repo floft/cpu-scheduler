@@ -1,3 +1,4 @@
+import os.path
 import numpy as np
 
 # Format:
@@ -25,7 +26,7 @@ if __name__ == "__main__":
         maxArrivalInc = 5
 
         for fn in range(0,maxFiles):
-            with open(directory+"/" + str(fn) + ".txt", "w") as f:
+            with open(os.path.join(directory,str(fn)+".txt"), "w") as f:
                 # Initialize for each file
                 arrival = 0
 
@@ -52,7 +53,7 @@ if __name__ == "__main__":
     # Generate example output file for initial plotting
     #
     if generateExampleOutput:
-        with open(outputdirectory+"/example_output.csv", "w") as f:
+        with open(os.path.join(outputdirectory,"example_output.csv"), "w") as f:
             # Initialize for each file
             arrival = 0
 

@@ -285,8 +285,8 @@ if __name__ == "__main__":
         # Test different numbers of CPUs with FCFS
         queue = QueueFCFS()
         for j in range(1,10):
-            infile="processes/"+str(i)+".txt"
-            outfile="results/"+str(i)+"_fcfs_cpu"+str(j)+".csv"
+            infile=os.path.join("processes",str(i)+".txt")
+            outfile=os.path.join("results",str(i)+"_fcfs_cpu"+str(j)+".csv")
 
             # Does the input exist?
             if not os.path.isfile(infile):

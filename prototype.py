@@ -1,9 +1,8 @@
 #
-# Intial prototype of the overall simulation structure
-#
-# Note: will be re-coded in C++ when I get something initally working.
+# Discrete event simulation of CPU scheduling
 #
 import os.path
+import multiprocessing
 
 # The different queueing algorithms
 class Queue:
@@ -279,14 +278,25 @@ def runSimulation(filename, queue, cpuCount, contextSwitchTime=2, debug=False):
 
     return completedProcesses
 
+# Test different numbers of CPUs with FCFS
+def TestFCFS(infile, outfile, cores):
+    queue = QueueFCFS()
+    writeResultsToCSV(runSimulation(infile, queue, cpuCount=cores), outfile)
+
+    return outfile
+
 if __name__ == "__main__":
+    maxProcesses = multiprocessing.cpu_count()
+    pool = multiprocessing.Pool(processes=maxProcesses)
+    results = []
+
+    print("Will use", maxProcesses, "threads")
+
     # Run on each of the 10 randomly-generated input files of processes
-    for i in range(0,10):
-        # Test different numbers of CPUs with FCFS
-        queue = QueueFCFS()
-        for j in range(1,10):
-            infile=os.path.join("processes",str(i)+".txt")
-            outfile=os.path.join("results",str(i)+"_fcfs_cpu"+str(j)+".csv")
+    for fn in range(0,10):
+        for cores in range(1,10):
+            infile=os.path.join("processes",str(fn)+".txt")
+            outfile=os.path.join("results",str(fn)+"_fcfs_cpu"+str(cores)+".csv")
 
             # Does the input exist?
             if not os.path.isfile(infile):
@@ -295,9 +305,12 @@ if __name__ == "__main__":
 
             # Skip if the output exists already
             if not os.path.isfile(outfile):
-                print("Running:", infile)
-                writeResultsToCSV(runSimulation(infile, queue, cpuCount=j),
-                        outfile)
-                print("Results:", outfile)
+                print("Running:", infile, "with", cores, "cores")
+                results.append(pool.apply_async(TestFCFS, [infile, outfile,
+                    cores]))
             else:
                 print("Skipping:", outfile)
+
+    # Print when each finishes
+    for r in results:
+        print("Results:", r.get())

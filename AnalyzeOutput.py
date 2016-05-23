@@ -45,7 +45,7 @@ def processFiles(files):
         avgTurnaround = turnaround.mean()
         avgWait = wait.mean()
         avgResponse = response.mean()
-        throughput = df['Completed'].count() / df['Completed'].iloc[-1]
+        throughput = df['Completed'].count() / df['Completed'].max()
 
         results = results.append(pd.DataFrame([[cores, avgTurnaround, avgWait,
             avgResponse, throughput]], index=[i],

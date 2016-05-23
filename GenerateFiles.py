@@ -15,6 +15,7 @@ if __name__ == "__main__":
     # Parameters for each file
     maxFiles = 10
     directory = "processes"
+    outputdirectory = "results"
     count = 2000
     maxTime = 100
     maxSwitches = 5
@@ -47,7 +48,7 @@ if __name__ == "__main__":
     #
     # Generate example output file for initial plotting
     #
-    with open(directory+"/example_output.csv", "w") as f:
+    with open(outputdirectory+"/example_output.csv", "w") as f:
         # Initialize for each file
         arrival = 0
 

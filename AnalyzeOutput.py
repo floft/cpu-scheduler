@@ -28,7 +28,7 @@ random.seed(0)
 np.random.seed(0)
 
 # Plot all the data
-df = pd.read_csv('processes/example_output.csv')
+df = pd.read_csv('results/0.csv')
 
 turnaround = df['Completed'] - df['Submitted']
 wait = df['Queues']

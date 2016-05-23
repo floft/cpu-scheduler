@@ -70,20 +70,20 @@ for f in files:
 # FCFS with different numbers of cores
 fcfs = processFiles(fcfs_files)
 
-plt.figure()
-sns.violinplot(x="Cores", y="AvgTurnaround", data=fcfs)
-plt.title("Average Turnaround with FCFS varying number of cores")
+# Plots
+def combPlot(x, y, data, title):
+    plt.figure()
+    #sns.violinplot(x=x, y=y, data=data, inner=None)
+    #sns.swarmplot(x=x, y=y, data=data, color="w", alpha=.5)
+    sns.swarmplot(x=x, y=y, data=data)
+    plt.title(title)
 
-plt.figure()
-sns.violinplot(x="Cores", y="AvgWait", data=fcfs)
-plt.title("Average Wait with FCFS varying number of cores")
-
-plt.figure()
-sns.violinplot(x="Cores", y="AvgResponse", data=fcfs)
-plt.title("Average Response with FCFS varying number of cores")
-
-plt.figure()
-sns.violinplot(x="Cores", y="Throughput", data=fcfs)
-plt.title("Average Throughput with FCFS varying number of cores")
-
+combPlot(x="Cores", y="AvgTurnaround", data=fcfs,
+        title="Average Turnaround with FCFS varying number of cores")
+combPlot(x="Cores", y="AvgWait", data=fcfs,
+        title="Average Wait with FCFS varying number of cores")
+combPlot(x="Cores", y="AvgResponse", data=fcfs,
+        title="Average Response with FCFS varying number of cores")
+combPlot(x="Cores", y="Throughput", data=fcfs,
+        title="Average Throughput with FCFS varying number of cores")
 plt.show()

@@ -73,7 +73,12 @@ class CPU:
         self.pid = pid
 
         p = self.processTable[pid]
-        p.started = clock
+
+        # Only set started if this is the first time it's been started. We'll
+        # call this function both when it starts and when it starts up again
+        # after performing I/O.
+        if p.started == None:
+            p.started = clock
 
     def done(self, clock, p):
         p.completed = clock
@@ -97,7 +102,7 @@ class PCB:
 
         # Important timestamps
         self.submitted = submitted
-        self.started = 0
+        self.started = None # None means not started yet, 0 could be started at zero
         self.completed = 0
 
         # Time spent in each of the following
@@ -116,7 +121,7 @@ class PCB:
     # the list of times and reset the I/O or execution time accordingly, which
     # we use to determine when we've finished the next time item
     def isDoneIO(self, clock):
-        isDone = self.io == self.times[0]
+        isDone = self.io == self.times[-1]
 
         if isDone:
             self.times.pop()
@@ -125,7 +130,7 @@ class PCB:
         return isDone
 
     def isDoneExec(self):
-        isDone = self.executing == self.times[0]
+        isDone = self.executing == self.times[-1]
 
         if isDone:
             self.times.pop()
@@ -156,8 +161,11 @@ def loadProcessesFromCSV(fn):
     with open(fn, 'r') as f:
         for line in f:
             pid, arrivalTime, times = line.split(",", 2)
+
+            # Reverse the times list so that popping off the back is doable via
+            # the .pop() function
             allProcesses.append(Process(int(pid), int(arrivalTime),
-                [int(x.strip()) for x in times.split(",")]))
+                [int(x.strip()) for x in reversed(times.split(","))]))
 
     # Sort based on arrival times
     allProcesses.sort()
@@ -213,11 +221,14 @@ def runSimulation(filename, queue, cpuCount, contextSwitchTime=2, debug=False):
             p = processTable[pid]
             p.incIO()
 
+            if debug:
+                oldTime = p.times[-1]
+
             # If it's done with I/O, then remove it from this queue and put it
             # back in the queue to be executed
             if p.isDoneIO(clock):
                 if debug:
-                    print(clock, "Process", pid, "done with I/O")
+                    print(clock, "Process", pid, "done with I/O after", oldTime)
                 io.pop()
 
                 # If the I/O wasn't the last operation, then we have more CPU
@@ -227,7 +238,8 @@ def runSimulation(filename, queue, cpuCount, contextSwitchTime=2, debug=False):
                 else:
                     cpu.done(clock, p)
                     if debug:
-                        print(clock, "Process", p.pid, "completed")
+                        print(clock, "Process", p.pid, "completed after",
+                                p.executingTotal, "and", p.ioTotal, "I/O")
 
         # Run each CPU
         for cpuIndex, cpu in enumerate(cpus):
@@ -236,20 +248,24 @@ def runSimulation(filename, queue, cpuCount, contextSwitchTime=2, debug=False):
                 p = processTable[cpu.pid]
                 p.incExec()
 
+                if debug:
+                   print(clock, "Executing", p.pid, "Time left",
+                           p.times[-1]-p.executing)
+
                 # If it's done, then remove it
-                #if debug:
-                #   print(clock, "Executing", p.pid, "Time left", p.times[0]-p.executing)
                 if p.isDoneExec():
                     # If there are more times, then it's waiting for I/O now
                     if p.times:
                         if debug:
-                            print(clock, "Process", cpu.pid, "performing I/O")
+                            print(clock, "Process", cpu.pid,
+                                    "performing I/O for", p.times[-1])
                         io.insert(0, p.pid)
                     # Otherwise, we're done and start a context switch
                     else:
                         cpu.done(clock, p)
                         if debug:
-                            print(clock, "Process", p.pid, "completed")
+                            print(clock, "Process", p.pid, "completed after",
+                                    p.executingTotal, "and", p.ioTotal, "I/O")
 
                     # In either case, this core is no longer running any
                     # process and now it's in a context switch
@@ -279,35 +295,48 @@ def runSimulation(filename, queue, cpuCount, contextSwitchTime=2, debug=False):
     return completedProcesses
 
 # Test different numbers of CPUs with FCFS
-def TestFCFS(infile, outfile, cores):
+def TestFCFS(infile, outfile, cores, debug=False):
     queue = QueueFCFS()
-    writeResultsToCSV(runSimulation(infile, queue, cpuCount=cores), outfile)
+    writeResultsToCSV(runSimulation(infile, queue, cpuCount=cores,
+        debug=debug), outfile)
 
     return outfile
 
 if __name__ == "__main__":
-    maxProcesses = multiprocessing.cpu_count()
+    debug = False
+    outdir = "results"
+
+    if debug:
+        maxProcesses = 1
+    else:
+        maxProcesses = multiprocessing.cpu_count()
     pool = multiprocessing.Pool(processes=maxProcesses)
     results = []
 
     print("Will use", maxProcesses, "threads")
 
-    # Run on each of the 10 randomly-generated input files of processes
+    # Make sure output directory exists
+    if not os.path.exists(outdir):
+        os.makedirs(outdir)
+
+    # Run on each of the 5 randomly-generated input files of processes
     for fn in range(0,5):
         for cores in range(1,10):
-            infile=os.path.join("processes",str(fn)+".txt")
-            outfile=os.path.join("results",str(fn)+"_fcfs_cpu"+str(cores)+".csv")
+            infile = os.path.join("processes", str(fn)+".txt")
 
             # Does the input exist?
             if not os.path.isfile(infile):
                 print("Doesn't exist:", infile)
                 continue
 
+            outfile = os.path.join(outdir,
+                    str(fn)+"_fcfs_cpu"+str(cores)+".csv")
+
             # Skip if the output exists already
             if not os.path.isfile(outfile):
                 print("Running:", infile, "with", cores, "cores")
                 results.append(pool.apply_async(TestFCFS, [infile, outfile,
-                    cores]))
+                    cores, debug]))
             else:
                 print("Skipping:", outfile)
 

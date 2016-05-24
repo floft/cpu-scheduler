@@ -21,7 +21,7 @@ if __name__ == "__main__":
     #
     if generateInput:
         # Parameters for each file
-        maxFiles = 10
+        maxFiles = 5
         directory = "processes"
         outputdirectory = "results"
         count = 1000

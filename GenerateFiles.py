@@ -25,7 +25,8 @@ if __name__ == "__main__":
         directory = "processes"
         outputdirectory = "results"
         count = 1000
-        maxTime = 50
+        maxTimeExec = 50
+        maxTimeIO = 10
         maxSwitches = 5
         maxArrivalInc = 5
 
@@ -49,7 +50,10 @@ if __name__ == "__main__":
                     l.append(arrival)
 
                     for j in range(0,switches):
-                        l.append(np.random.randint(1,maxTime))
+                        if j%2 == 0:
+                            l.append(np.random.randint(1,maxTimeExec))
+                        else:
+                            l.append(np.random.randint(1,maxTimeIO))
 
                     f.write(",".join(str(x) for x in l) + "\r\n")
 

@@ -324,7 +324,7 @@ if __name__ == "__main__":
 
     # Run on each of the 5 randomly-generated input files of processes
     for fn in range(0,5):
-        for cores in range(1,10):
+        for cores in range(1,18,2):
             infile = os.path.join("processes", str(fn)+".txt")
 
             # Does the input exist?

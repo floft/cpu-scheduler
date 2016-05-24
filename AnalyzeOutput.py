@@ -37,7 +37,7 @@ np.random.seed(0)
 def processFiles(directory, files):
     results = pd.DataFrame()
 
-    for i, [fn, cores] in enumerate(files):
+    for i, [fn, queues, cores] in enumerate(files):
         df = pd.read_csv(os.path.join(directory,fn))
 
         turnaround = df['Completed'] - df['Submitted']
@@ -48,9 +48,10 @@ def processFiles(directory, files):
         avgResponse = response.mean()
         throughput = df['Completed'].count() / df['Completed'].max()
 
-        results = results.append(pd.DataFrame([[cores, avgTurnaround, avgWait,
-            avgResponse, throughput]], index=[i],
-            columns=['Cores','AvgTurnaround','AvgWait','AvgResponse','Throughput']))
+        results = results.append(pd.DataFrame([[queues, cores,
+            avgTurnaround, avgWait, avgResponse, throughput]], index=[i],
+            columns=['Queues', 'Cores', 'AvgTurnaround', 'AvgWait',
+                'AvgResponse', 'Throughput']))
 
     return results
 
@@ -64,27 +65,45 @@ if __name__ == "__main__":
     for d in dirs:
         files = os.listdir(d)
 
-        # Match the different tests we're doing
-        re_fcfs = re.compile(".*_fcfs_cpu(.*)\.csv")
+        # FCFS with different numbers of cores
+        re_fcfs = re.compile(".*_fcfs(.*)_cpu(.*)\.csv")
         fcfs_files = []
         for f in files:
             m = re_fcfs.match(f)
 
-            if m and len(m.groups()):
-                # filename, # of cores
-                fcfs_files.append((f, int(m.groups()[0])))
+            if m and len(m.groups()) == 2:
+                queues = "FCFS"+m.groups()[0]
+                coreCount = int(m.groups()[1])
+                fcfs_files.append((f, queues, coreCount))
 
-        # FCFS with different numbers of cores
         fcfs = processFiles(d, fcfs_files)
 
+        # RRRRFCFS
+        re_rrrrfcfs = re.compile(".*_RR(.*)RR(.*)FCFS_cpu(.*)\.csv")
+        rrrrfcfs_files = []
+        for f in files:
+            m = re_rrrrfcfs.match(f)
+
+            if m and len(m.groups()) == 3:
+                tq1 = m.groups()[0]
+                tq2 = m.groups()[1]
+                queues = "RR"+tq1+"RR"+tq2+"FCFS"
+                coreCount = int(m.groups()[2])
+                rrrrfcfs_files.append((f, queues, coreCount))
+
+        rrrrfcfs = processFiles(d, rrrrfcfs_files)
+
         # Plots
-        def combPlot(x, y, data):
+        def combPlot(x, y, data, hue=None):
             #sns.violinplot(x=x, y=y, data=data, inner=None)
             #sns.swarmplot(x=x, y=y, data=data, color="w", alpha=.5)
-            sns.swarmplot(x=x, y=y, data=data)
+            sns.swarmplot(x=x, y=y, hue=hue, data=data)
 
+        #
+        # Single FCFS Queue
+        #
         fig = plt.figure()
-        fig.suptitle("FCFS - "+d)
+        fig.suptitle("Single FCFS Queue - "+d)
 
         ax1 = fig.add_subplot(2,2,1)
         combPlot(x="Cores", y="AvgTurnaround", data=fcfs)
@@ -100,6 +119,56 @@ if __name__ == "__main__":
 
         ax4 = fig.add_subplot(2,2,4)
         combPlot(x="Cores", y="Throughput", data=fcfs)
+        ax4.set_title("Throughput")
+
+        plt.subplots_adjust(wspace=0.3, hspace=0.4)
+
+        #
+        # Multiple FCFS Queues
+        #
+        fig = plt.figure()
+        fig.suptitle("Multiple FCFS Queues - "+d)
+        oneCore = fcfs.loc[lambda df: df.Cores == 1]
+
+        ax1 = fig.add_subplot(2,2,1)
+        combPlot(x="Queues", y="AvgTurnaround", data=oneCore)
+        ax1.set_title("Avg Turnaround")
+
+        ax2 = fig.add_subplot(2,2,2)
+        combPlot(x="Queues", y="AvgWait", data=oneCore)
+        ax2.set_title("Avg Wait")
+
+        ax3 = fig.add_subplot(2,2,3)
+        combPlot(x="Queues", y="AvgResponse", data=oneCore)
+        ax3.set_title("Avg Response")
+
+        ax4 = fig.add_subplot(2,2,4)
+        combPlot(x="Queues", y="Throughput", data=oneCore)
+        ax4.set_title("Throughput")
+
+        plt.subplots_adjust(wspace=0.3, hspace=0.4)
+
+        #
+        # RR, RR, FCFS Queues
+        #
+        fig = plt.figure()
+        fig.suptitle("RR RR FCFS Queues - "+d)
+        oneCore = rrrrfcfs.loc[lambda df: df.Cores == 1]
+
+        ax1 = fig.add_subplot(2,2,1)
+        combPlot(x="Queues", y="AvgTurnaround", data=oneCore)
+        ax1.set_title("Avg Turnaround")
+
+        ax2 = fig.add_subplot(2,2,2)
+        combPlot(x="Queues", y="AvgWait", data=oneCore)
+        ax2.set_title("Avg Wait")
+
+        ax3 = fig.add_subplot(2,2,3)
+        combPlot(x="Queues", y="AvgResponse", data=oneCore)
+        ax3.set_title("Avg Response")
+
+        ax4 = fig.add_subplot(2,2,4)
+        combPlot(x="Queues", y="Throughput", data=oneCore)
         ax4.set_title("Throughput")
 
         plt.subplots_adjust(wspace=0.3, hspace=0.4)

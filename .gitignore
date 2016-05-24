@@ -1,5 +1,6 @@
 results*
 processes/*
+__pycache__
 
 # Compiled Object files
 *.slo

@@ -2,6 +2,7 @@
 # Discrete event simulation of CPU scheduling
 #
 import os.path
+import numpy as np
 import multiprocessing
 
 # The different queueing algorithms
@@ -16,7 +17,7 @@ class Queue:
         return self.items == []
 
     def enqueue(self, item):
-        self.items.insert(0,item)
+        self.items.insert(0, item)
 
     def dequeue(self):
         return self.items.pop()
@@ -24,8 +25,70 @@ class Queue:
     def size(self):
         return len(self.items)
 
+    # By default, never preempt a running process, only used in RR and other
+    # preemptive algorithms
+    def preemptTime(self):
+        return np.Inf
+
+# The base class is FCFS
 class QueueFCFS(Queue):
     pass
+
+# RR is FCFS but with preemption
+class QueueRR(Queue):
+    def __init__(self, preempt):
+        Queue.__init__(self)
+        self.preempt = preempt
+
+    def preemptTime(self):
+        return self.preempt
+
+# Allow for working with multiple queues
+class MultilevelQueue():
+    def __init__(self, queues):
+        assert len(queues) > 0, "MultilevelQueue must have at least one queue"
+        self.grabFromNext = 0
+        self.queues = queues
+
+    def isEmpty(self):
+        return all(q.isEmpty() for q in self.queues)
+
+    # Insert into the first queue if priority = 0, which is used if this is the
+    # first time this is added to this multilevel queue. However, if this has
+    # been preempted (in RR for instance), then next time it runs it'll get a
+    # lower priority and be moved to the second if priority=1, etc. queue.
+    def enqueue(self, item, priority=0):
+        self.queues[min(priority,len(self.queues)-1)].enqueue(item)
+
+    # Grab one from the queues just cycling through each, so first from the
+    # first queue, next from the second queue, etc.
+    def dequeue(self):
+        assert not self.isEmpty(), "Can't dequeue() when no items in queue"
+
+        # Skip a queue if a queue doesn't have anything in it
+        while self.queues[self.grabFromNext].isEmpty():
+            self.incGrabNext()
+
+        item = self.queues[self.grabFromNext].dequeue()
+
+        # Save the current priority, i.e. which queue this came from
+        fromQueue = self.grabFromNext
+
+        # Save the max time it can run before being preempted, changes
+        # depending on which queue this came out of, e.g. may have come from a
+        # RR with a time quantum of 2 or another one with a time quantum of 10
+        preemptTime = self.queues[fromQueue].preemptTime()
+
+        # Next time we'll grab from the next queue
+        self.incGrabNext()
+
+        return (item, fromQueue, preemptTime)
+
+    def incGrabNext(self):
+        self.grabFromNext = (self.grabFromNext+1)%len(self.queues)
+
+    def size(self):
+        return sum(q.size() for q in self.queues)
 
 # Stores information about a process after reading from the file but before it
 # arrives and gets added to the process table
@@ -99,9 +162,20 @@ class PCB:
         # would take if they were to do something
         self.times = times
 
-        # A priority that will increase over time so we don't get
-        # starvation
+        # A priority that will increase over time so we don't get starvation
+        #
+        # Note: at the moment this stores which queue in the multilevel queues
+        # this process came from so that next time it will be moved to a later
+        # queue.
         self.priority = 0
+
+        # When this process will be preempted next, by default it won't
+        self.preemptTime = np.Inf
+
+        # In addition to executing and executingTotal, we need to record how
+        # long it was since we were last preempted so that we know when to
+        # preempt next
+        self.sinceLastPreempt = 0
 
         # Important timestamps
         self.submitted = submitted
@@ -141,6 +215,14 @@ class PCB:
 
         return isDone
 
+    def isPreempted(self):
+        isPreempt = self.sinceLastPreempt == self.preemptTime
+
+        if isPreempt:
+            self.sinceLastPreempt = 0
+
+        return isPreempt
+
     # Increment the times when doing I/O, executing, in queues
     def incIO(self):
         self.io += 1
@@ -148,6 +230,7 @@ class PCB:
 
     def incExec(self):
         self.executing += 1
+        self.sinceLastPreempt += 1
         self.executingTotal += 1
 
     def incQueues(self):
@@ -184,10 +267,12 @@ def writeResultsToCSV(results, fn):
         for p in results:
             f.write(repr(p) + "\r\n")
 
-def runSimulation(filename, queue, cpuCount, contextSwitchTime=2, debug=False):
+# Load a file, run the simulation, output the results to a file
+def runSimulation(infile, outfile, queues, cpuCount, contextSwitchTime, debug):
     # Initialize
     clock = 0
-    allProcesses = loadProcessesFromCSV(filename)
+    queue = MultilevelQueue(queues)
+    allProcesses = loadProcessesFromCSV(infile)
 
     # Process table, i.e. list of all processes running, indexed by the PID
     processTable = {}
@@ -213,7 +298,7 @@ def runSimulation(filename, queue, cpuCount, contextSwitchTime=2, debug=False):
 
             # Add to the process table and add to our queue to start executing
             processTable[p.pid] = PCB(p.pid, p.times, clock)
-            queue.enqueue(p.pid)
+            queue.enqueue(p.pid, priority=0)
 
             if debug:
                 print(clock, "Process", p.pid, "arrived")
@@ -237,7 +322,7 @@ def runSimulation(filename, queue, cpuCount, contextSwitchTime=2, debug=False):
                 # If the I/O wasn't the last operation, then we have more CPU
                 # time needed for this process
                 if p.times:
-                    queue.enqueue(pid)
+                    queue.enqueue(pid, priority=0)
                 else:
                     cpu.done(clock, p)
                     if debug:
@@ -252,8 +337,8 @@ def runSimulation(filename, queue, cpuCount, contextSwitchTime=2, debug=False):
                 p.incExec()
 
                 if debug:
-                   print(clock, "Executing", p.pid, "Time left",
-                           p.times[-1]-p.executing)
+                    print(clock, "Executing", p.pid, "Time left",
+                        p.times[-1]-p.executing)
 
                 # If it's done, then remove it
                 if p.isDoneExec():
@@ -274,18 +359,41 @@ def runSimulation(filename, queue, cpuCount, contextSwitchTime=2, debug=False):
                     # process and now it's in a context switch
                     cpu.startContextSwitch()
 
+                # Otherwise, if it's preempted, then move it to the next queue
+                # and let the processor move onto another process next clock
+                # cycle
+                elif p.isPreempted():
+                    newPriority = min(p.priority,len(queue.queues)-1)
+                    queue.enqueue(cpu.pid, priority=newPriority)
+                    cpu.startContextSwitch()
+
+                    if debug:
+                        print(clock, "Preempting", p.pid, "after",
+                                p.sinceLastPreempt, "moving to priority",
+                                newPriority)
+
             # If no process is running, check if we're done with any context
             # switch, and if not but there's another process in the global
             # queue, start running it
             elif not cpu.inContextSwitch() and queue.size():
-                cpu.start(clock, queue.dequeue())
-                if debug:
-                    print(clock, "Running process", cpu.pid, "on CPU", cpuIndex)
+                pid, currentPriority, preemptTime = queue.dequeue()
 
-        # Increment all the processes that are currently waiting in a queue
-        for pid in queue.items:
-            p = processTable[pid]
-            p.incQueues()
+                # Save these parameters that we'll use as executing this
+                p = processTable[pid]
+                p.priority = currentPriority
+                p.preemptTime = preemptTime
+
+                cpu.start(clock, pid)
+
+                if debug:
+                    print(clock, "Running process", pid, "on CPU", cpuIndex)
+
+        # Increment all the processes that are currently waiting in a queue.
+        # We're dealing with a multilevel queue, so it's 2D.
+        for q in queue.queues:
+            for pid in q.items:
+                p = processTable[pid]
+                p.incQueues()
 
         # We're done with this clock cycle
         clock += 1
@@ -295,19 +403,18 @@ def runSimulation(filename, queue, cpuCount, contextSwitchTime=2, debug=False):
                     for c in cpus if c.running or c.contextSwitch]:
             break
 
-    return completedProcesses
+    writeResultsToCSV(completedProcesses, outfile)
 
-# Test different numbers of CPUs with FCFS
-def TestFCFS(infile, outfile, cores, debug=False):
-    queue = QueueFCFS()
-    writeResultsToCSV(runSimulation(infile, queue, cpuCount=cores,
-        debug=debug), outfile)
-
+    # For ease of printing out what we're done with
     return outfile
 
+# Run all the tests
 if __name__ == "__main__":
     debug = False
     outdir = "results"
+
+    # We'll just set this here for all the simulations
+    contextSwitchTime = 2
 
     if debug:
         maxProcesses = 1
@@ -324,24 +431,41 @@ if __name__ == "__main__":
 
     # Run on each of the 5 randomly-generated input files of processes
     for fn in range(0,5):
-        for cores in range(1,18,2):
-            infile = os.path.join("processes", str(fn)+".txt")
+        testfile = str(fn)
+        infile = os.path.join("processes", testfile+".txt")
 
-            # Does the input exist?
-            if not os.path.isfile(infile):
-                print("Doesn't exist:", infile)
-                continue
+        # Does the input exist?
+        if not os.path.isfile(infile):
+            print("Doesn't exist:", infile)
+            continue
 
-            outfile = os.path.join(outdir,
-                    str(fn)+"_fcfs_cpu"+str(cores)+".csv")
+        # Run each of the tests
+        #
+        # Defined here to just simplify the code, not having to pass in
+        # additional variables defined in this scope that are the same for all
+        # tests
+        def runTest(testname, queues, cpuCount):
+            outfile = os.path.join(outdir, testfile+"_"+testname+".csv")
 
             # Skip if the output exists already
             if not os.path.isfile(outfile):
-                print("Running:", infile, "with", cores, "cores")
-                results.append(pool.apply_async(TestFCFS, [infile, outfile,
-                    cores, debug]))
+                print("Running:", outfile)
+                results.append(pool.apply_async(runSimulation, [infile,
+                    outfile, queues, cpuCount, contextSwitchTime, debug]))
             else:
                 print("Skipping:", outfile)
+
+        # Test different numbers of FCFC queues, also varying number of cores
+        for fcfsCount in [1,3,5,7]:
+            for cores in range(1,18,2):
+                queues = [QueueFCFS() for i in range(0,fcfsCount)]
+                runTest("fcfs"+str(fcfsCount)+"_cpu"+str(cores), queues, cores)
+
+        # Test RR, RR, FCFS, also varying number of cores
+        for tq1, tq2 in [(2,10), (5,5), (10,2)]:
+            for cores in range(1,18,2):
+                queues = [QueueRR(tq1), QueueRR(tq2), QueueFCFS()]
+                runTest("RR"+str(tq1)+"RR"+str(tq2)+"FCFS_cpu"+str(cores), queues, cores)
 
     # Print when each finishes
     for r in results:

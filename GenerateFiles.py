@@ -1,10 +1,14 @@
-import os.path
-import numpy as np
-
+#
+# Generate the files of processes arriving at the CPU at different times and
+# taking certain amounts of CPU and I/O time
+#
 # Format:
 #    PID #, Arrival t, CPU t, IO t, CPU t, IO t, CPU t
 #    PID #, Arrival t, CPU t
 #    PID #, Arrival t, CPU t, IO t, CPU t, IO t
+#
+import os.path
+import numpy as np
 
 np.random.seed(0)
 

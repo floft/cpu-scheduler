@@ -102,7 +102,7 @@ if __name__ == "__main__":
         combPlot(x="Cores", y="Throughput", data=fcfs)
         ax4.set_title("Throughput")
 
-        plt.subplots_adjust(wspace=0.5, hspace=0.5)
+        plt.subplots_adjust(wspace=0.3, hspace=0.4)
 
     # Show all plots at the end
     plt.show()

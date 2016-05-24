@@ -25,9 +25,9 @@ if __name__ == "__main__":
         directory = "processes"
         outputdirectory = "results"
         count = 1000
-        maxTime = 200
+        maxTime = 50
         maxSwitches = 5
-        maxArrivalInc = 200
+        maxArrivalInc = 5
 
         for fn in range(0,maxFiles):
             with open(os.path.join(directory,str(fn)+".txt"), "w") as f:

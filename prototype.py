@@ -293,7 +293,7 @@ if __name__ == "__main__":
     print("Will use", maxProcesses, "threads")
 
     # Run on each of the 10 randomly-generated input files of processes
-    for fn in range(0,10):
+    for fn in range(0,5):
         for cores in range(1,10):
             infile=os.path.join("processes",str(fn)+".txt")
             outfile=os.path.join("results",str(fn)+"_fcfs_cpu"+str(cores)+".csv")

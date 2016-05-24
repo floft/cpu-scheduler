@@ -7,7 +7,7 @@
 #    PID #, Arrival t, CPU t
 #    PID #, Arrival t, CPU t, IO t, CPU t, IO t
 #
-import os.path
+import os
 import numpy as np
 
 np.random.seed(0)
@@ -15,6 +15,8 @@ np.random.seed(0)
 if __name__ == "__main__":
     generateInput = True
     generateExampleOutput = False
+    directory = "processes"
+    outputdirectory = "results"
 
     #
     # Generate process files for running through the simulation
@@ -22,13 +24,15 @@ if __name__ == "__main__":
     if generateInput:
         # Parameters for each file
         maxFiles = 5
-        directory = "processes"
-        outputdirectory = "results"
         count = 1000
         maxTimeExec = 50
         maxTimeIO = 10
         maxSwitches = 5
         maxArrivalInc = 5
+
+        # Make sure the directory exists
+        if not os.path.exists(directory):
+            os.makedirs(directory)
 
         for fn in range(0,maxFiles):
             with open(os.path.join(directory,str(fn)+".txt"), "w") as f:
@@ -61,6 +65,10 @@ if __name__ == "__main__":
     # Generate example output file for initial plotting
     #
     if generateExampleOutput:
+        # Make sure the directory exists
+        if not os.path.exists(outputdirectory):
+            os.makedirs(outputdirectory)
+
         with open(os.path.join(outputdirectory,"example_output.csv"), "w") as f:
             # Initialize for each file
             arrival = 0

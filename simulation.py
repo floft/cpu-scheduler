@@ -1,7 +1,7 @@
 #
 # Discrete event simulation of CPU scheduling
 #
-import os.path
+import os
 import numpy as np
 import multiprocessing
 

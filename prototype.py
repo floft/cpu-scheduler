@@ -5,6 +5,9 @@ import os.path
 import multiprocessing
 
 # The different queueing algorithms
+#
+# Base class here copied and pasted from:
+#  http://interactivepython.org/runestone/static/pythonds/BasicDS/ImplementingaQueueinPython.html
 class Queue:
     def __init__(self):
         self.items = []

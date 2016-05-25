@@ -72,7 +72,7 @@ if __name__ == "__main__":
             m = re_fcfs.match(f)
 
             if m and len(m.groups()) == 2:
-                queues = "FCFS"+m.groups()[0]
+                queues = m.groups()[0] # FCFS
                 coreCount = int(m.groups()[1])
                 fcfs_files.append((f, queues, coreCount))
 
@@ -87,7 +87,7 @@ if __name__ == "__main__":
             if m and len(m.groups()) == 3:
                 tq1 = m.groups()[0]
                 tq2 = m.groups()[1]
-                queues = "RR"+tq1+"RR"+tq2+"FCFS"
+                queues = tq1+","+tq2 # RR, RR, FCFS
                 coreCount = int(m.groups()[2])
                 rrrrfcfs_files.append((f, queues, coreCount))
 
@@ -95,9 +95,10 @@ if __name__ == "__main__":
 
         # Plots
         def combPlot(x, y, data, hue=None):
-            #sns.violinplot(x=x, y=y, data=data, inner=None)
-            #sns.swarmplot(x=x, y=y, data=data, color="w", alpha=.5)
+            #sns.violinplot(x=x, y=y, data=data, hue=hue, inner=None)
+            #sns.swarmplot(x=x, y=y, data=data, hue=hue, color="w", alpha=.5)
             sns.swarmplot(x=x, y=y, hue=hue, data=data)
+            #sns.stripplot(x=x, y=y, hue=hue, data=data, jitter=False, alpha=0.5)
 
         #
         # Single FCFS Queue
@@ -151,24 +152,48 @@ if __name__ == "__main__":
         #
         # RR, RR, FCFS Queues
         #
+        #for core in rrrrfcfs['Cores'].unique():
+        if False:
+            oneCore = rrrrfcfs.loc[lambda df: df.Cores == core]
+
+            fig = plt.figure()
+            fig.suptitle("RR RR FCFS Queues for "+str(core)+" cores - "+d)
+
+            ax1 = fig.add_subplot(2,2,1)
+            combPlot(x="Queues", y="AvgTurnaround", data=oneCore)
+            ax1.set_title("Avg Turnaround")
+
+            ax2 = fig.add_subplot(2,2,2)
+            combPlot(x="Queues", y="AvgWait", data=oneCore)
+            ax2.set_title("Avg Wait")
+
+            ax3 = fig.add_subplot(2,2,3)
+            combPlot(x="Queues", y="AvgResponse", data=oneCore)
+            ax3.set_title("Avg Response")
+
+            ax4 = fig.add_subplot(2,2,4)
+            combPlot(x="Queues", y="Throughput", data=oneCore)
+            ax4.set_title("Throughput")
+
+            plt.subplots_adjust(wspace=0.3, hspace=0.4)
+
         fig = plt.figure()
         fig.suptitle("RR RR FCFS Queues - "+d)
-        oneCore = rrrrfcfs.loc[lambda df: df.Cores == 1]
 
         ax1 = fig.add_subplot(2,2,1)
-        combPlot(x="Queues", y="AvgTurnaround", data=oneCore)
+        combPlot(hue="Queues", x="Cores", y="AvgTurnaround", data=rrrrfcfs)
         ax1.set_title("Avg Turnaround")
 
         ax2 = fig.add_subplot(2,2,2)
-        combPlot(x="Queues", y="AvgWait", data=oneCore)
+        combPlot(hue="Queues", x="Cores", y="AvgWait", data=rrrrfcfs)
         ax2.set_title("Avg Wait")
 
         ax3 = fig.add_subplot(2,2,3)
-        combPlot(x="Queues", y="AvgResponse", data=oneCore)
+        combPlot(hue="Queues", x="Cores", y="AvgResponse", data=rrrrfcfs)
         ax3.set_title("Avg Response")
 
         ax4 = fig.add_subplot(2,2,4)
-        combPlot(x="Queues", y="Throughput", data=oneCore)
+        combPlot(hue="Queues", x="Cores", y="Throughput", data=rrrrfcfs)
         ax4.set_title("Throughput")
 
         plt.subplots_adjust(wspace=0.3, hspace=0.4)

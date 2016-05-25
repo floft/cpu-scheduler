@@ -462,7 +462,7 @@ if __name__ == "__main__":
                 runTest("fcfs"+str(fcfsCount)+"_cpu"+str(cores), queues, cores)
 
         # Test RR, RR, FCFS, also varying number of cores
-        for tq1, tq2 in [(2,10), (5,5), (10,2)]:
+        for tq1, tq2 in [(2,10), (10,2), (5,5), (10,10), (50,50), (50,10), (10,50)]:
             for cores in range(1,18,2):
                 queues = [QueueRR(tq1), QueueRR(tq2), QueueFCFS()]
                 runTest("RR"+str(tq1)+"RR"+str(tq2)+"FCFS_cpu"+str(cores), queues, cores)

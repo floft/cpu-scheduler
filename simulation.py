@@ -43,6 +43,19 @@ class QueueRR(Queue):
     def preemptTime(self):
         return self.preempt
 
+# SPN is FCFS but selects which is next based on the smallest remaining time
+class QueueSPN(Queue):
+    def dequeue(self):
+        # Find one with the least amount of time remaining
+        timesRemaining = [sum(p.times) for p in self.items]
+        index = np.argmin(timesRemaining)
+        item = self.items[index]
+
+        # Delete it from the queue
+        del self.items[index]
+
+        return item
+
 # Allow for working with multiple queues
 class MultilevelQueue():
     def __init__(self, queues):
@@ -73,16 +86,17 @@ class MultilevelQueue():
 
         # Save the current priority, i.e. which queue this came from
         fromQueue = self.grabFromNext
+        item.priority = fromQueue
 
         # Save the max time it can run before being preempted, changes
         # depending on which queue this came out of, e.g. may have come from a
         # RR with a time quantum of 2 or another one with a time quantum of 10
-        preemptTime = self.queues[fromQueue].preemptTime()
+        item.preemptTime = self.queues[fromQueue].preemptTime()
 
         # Next time we'll grab from the next queue
         self.incGrabNext()
 
-        return (item, fromQueue, preemptTime)
+        return item
 
     def incGrabNext(self):
         self.grabFromNext = (self.grabFromNext+1)%len(self.queues)
@@ -112,7 +126,7 @@ class CPU:
         self.processTable = processTable
         self.completedProcesses = completedProcesses
         self.running = False
-        self.pid = 0 # PID of running process
+        self.p = None # A reference to the PCB of the process being run
 
         # To implement a context switch, and note that we start off in a
         # context switch
@@ -134,18 +148,18 @@ class CPU:
             self.contextSwitchCount = 0
             return False
 
-    def start(self, clock, pid):
+    def start(self, clock, p):
         self.running = True
-        self.pid = pid
-
-        p = self.processTable[pid]
+        self.p = p
 
         # Only set started if this is the first time it's been started. We'll
         # call this function both when it starts and when it starts up again
         # after performing I/O.
-        if p.started == None:
-            p.started = clock
+        if self.p.started == None:
+            self.p.started = clock
 
+    # TODO maybe this should be a PCB method? It doesn't even use self.p and is
+    # called also when done with I/O even if not on a CPU
     def done(self, clock, p):
         p.completed = clock
         self.completedProcesses.append(p)
@@ -291,22 +305,22 @@ def runSimulation(infile, outfile, queues, cpuCount, contextSwitchTime, debug):
         # Add processes as they arrive to the process table
         arrived = [p for p in allProcesses if p.arrivalTime == clock]
 
-        for p in arrived:
+        for process in arrived:
             # Remove it since it only arrives once. Not really needed, but
             # searches for equality on a smaller array are faster.
-            allProcesses.remove(p)
+            allProcesses.remove(process)
 
             # Add to the process table and add to our queue to start executing
-            processTable[p.pid] = PCB(p.pid, p.times, clock)
-            queue.enqueue(p.pid, priority=0)
+            p = PCB(process.pid, process.times, clock)
+            processTable[process.pid] = p
+            queue.enqueue(p, priority=0)
 
             if debug:
                 print(clock, "Process", p.pid, "arrived")
 
         # Manage what is waiting in the I/O queue, which is FCFS
         if io:
-            pid = io[-1]
-            p = processTable[pid]
+            p = io[-1]
             p.incIO()
 
             if debug:
@@ -316,13 +330,13 @@ def runSimulation(infile, outfile, queues, cpuCount, contextSwitchTime, debug):
             # back in the queue to be executed
             if p.isDoneIO(clock):
                 if debug:
-                    print(clock, "Process", pid, "done with I/O after", oldTime)
+                    print(clock, "Process", p.pid, "done with I/O after", oldTime)
                 io.pop()
 
                 # If the I/O wasn't the last operation, then we have more CPU
                 # time needed for this process
                 if p.times:
-                    queue.enqueue(pid, priority=0)
+                    queue.enqueue(p, priority=0)
                 else:
                     cpu.done(clock, p)
                     if debug:
@@ -333,27 +347,26 @@ def runSimulation(infile, outfile, queues, cpuCount, contextSwitchTime, debug):
         for cpuIndex, cpu in enumerate(cpus):
             # If a process is running, increment it's executing time
             if cpu.running:
-                p = processTable[cpu.pid]
-                p.incExec()
+                cpu.p.incExec()
 
                 if debug:
-                    print(clock, "Executing", p.pid, "Time left",
-                        p.times[-1]-p.executing)
+                    print(clock, "Executing", cpu.p.pid, "Time left",
+                        cpu.p.times[-1]-cpu.p.executing)
 
                 # If it's done, then remove it
-                if p.isDoneExec():
+                if cpu.p.isDoneExec():
                     # If there are more times, then it's waiting for I/O now
-                    if p.times:
+                    if cpu.p.times:
                         if debug:
-                            print(clock, "Process", cpu.pid,
-                                    "performing I/O for", p.times[-1])
-                        io.insert(0, p.pid)
+                            print(clock, "Process", cpu.p.pid,
+                                    "performing I/O for", cpu.p.times[-1])
+                        io.insert(0, cpu.p)
                     # Otherwise, we're done and start a context switch
                     else:
-                        cpu.done(clock, p)
+                        cpu.done(clock, cpu.p)
                         if debug:
-                            print(clock, "Process", p.pid, "completed after",
-                                    p.executingTotal, "and", p.ioTotal, "I/O")
+                            print(clock, "Process", cpu.p.pid, "completed after",
+                                    cpu.p.executingTotal, "and", cpu.p.ioTotal, "I/O")
 
                     # In either case, this core is no longer running any
                     # process and now it's in a context switch
@@ -362,41 +375,35 @@ def runSimulation(infile, outfile, queues, cpuCount, contextSwitchTime, debug):
                 # Otherwise, if it's preempted, then move it to the next queue
                 # and let the processor move onto another process next clock
                 # cycle
-                elif p.isPreempted():
-                    newPriority = min(p.priority,len(queue.queues)-1)
-                    queue.enqueue(cpu.pid, priority=newPriority)
+                elif cpu.p.isPreempted():
+                    newPriority = min(cpu.p.priority,len(queue.queues)-1)
+                    queue.enqueue(cpu.p, priority=newPriority)
                     cpu.startContextSwitch()
 
                     if debug:
-                        print(clock, "Preempting", p.pid, "after",
-                                p.sinceLastPreempt, "moving to priority",
+                        print(clock, "Preempting", cpu.p.pid, "after",
+                                cpu.p.sinceLastPreempt, "moving to priority",
                                 newPriority)
 
             # If no process is running, check if we're done with any context
             # switch, and if not but there's another process in the global
             # queue, start running it
             elif not cpu.inContextSwitch() and queue.size():
-                pid, currentPriority, preemptTime = queue.dequeue()
-
-                # Save these parameters that we'll use as executing this
-                p = processTable[pid]
-                p.priority = currentPriority
-                p.preemptTime = preemptTime
-
-                cpu.start(clock, pid)
+                cpu.start(clock, queue.dequeue())
 
                 if debug:
-                    print(clock, "Running process", pid, "on CPU", cpuIndex)
+                    print(clock, "Running process", cpu.p.pid, "on CPU", cpuIndex)
 
         # Increment all the processes that are currently waiting in a queue.
         # We're dealing with a multilevel queue, so it's 2D.
         for q in queue.queues:
-            for pid in q.items:
-                p = processTable[pid]
+            for p in q.items:
                 p.incQueues()
 
         # We're done with this clock cycle
         clock += 1
+
+        # TODO increment by time to get us to the next event
 
         # Quit once all processes have finished running and nothing in the queues
         if not allProcesses and not queue.size() and not io and not [c
@@ -466,6 +473,12 @@ if __name__ == "__main__":
             for cores in range(1,18,2):
                 queues = [QueueRR(tq1), QueueRR(tq2), QueueFCFS()]
                 runTest("RR"+str(tq1)+"RR"+str(tq2)+"FCFS_cpu"+str(cores), queues, cores)
+
+        # Test RR, RR, SPN, also varying number of cores
+        for tq1, tq2 in [(2,10), (10,2), (5,5), (10,10), (50,50), (50,10), (10,50)]:
+            for cores in range(1,18,2):
+                queues = [QueueRR(tq1), QueueRR(tq2), QueueSPN()]
+                runTest("RR"+str(tq1)+"RR"+str(tq2)+"SPN_cpu"+str(cores), queues, cores)
 
     # Print when each finishes
     for r in results:

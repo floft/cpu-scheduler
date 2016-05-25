@@ -93,6 +93,21 @@ if __name__ == "__main__":
 
         rrrrfcfs = processFiles(d, rrrrfcfs_files)
 
+        # RRRRSPN
+        re_rrrrspn = re.compile(".*_RR(.*)RR(.*)SPN_cpu(.*)\.csv")
+        rrrrspn_files = []
+        for f in files:
+            m = re_rrrrspn.match(f)
+
+            if m and len(m.groups()) == 3:
+                tq1 = m.groups()[0]
+                tq2 = m.groups()[1]
+                queues = tq1+","+tq2 # RR, RR, SPN
+                coreCount = int(m.groups()[2])
+                rrrrspn_files.append((f, queues, coreCount))
+
+        rrrrspn = processFiles(d, rrrrspn_files)
+
         # Plots
         def combPlot(x, y, data, hue=None):
             #sns.violinplot(x=x, y=y, data=data, hue=hue, inner=None)
@@ -198,5 +213,29 @@ if __name__ == "__main__":
 
         plt.subplots_adjust(wspace=0.3, hspace=0.4)
 
+
+        #
+        # RR, RR, SPN Queues
+        #
+        fig = plt.figure()
+        fig.suptitle("RR RR SPN Queues - "+d)
+
+        ax1 = fig.add_subplot(2,2,1)
+        combPlot(hue="Queues", x="Cores", y="AvgTurnaround", data=rrrrspn)
+        ax1.set_title("Avg Turnaround")
+
+        ax2 = fig.add_subplot(2,2,2)
+        combPlot(hue="Queues", x="Cores", y="AvgWait", data=rrrrspn)
+        ax2.set_title("Avg Wait")
+
+        ax3 = fig.add_subplot(2,2,3)
+        combPlot(hue="Queues", x="Cores", y="AvgResponse", data=rrrrspn)
+        ax3.set_title("Avg Response")
+
+        ax4 = fig.add_subplot(2,2,4)
+        combPlot(hue="Queues", x="Cores", y="Throughput", data=rrrrspn)
+        ax4.set_title("Throughput")
+
+        plt.subplots_adjust(wspace=0.3, hspace=0.4)
     # Show all plots at the end
     plt.show()

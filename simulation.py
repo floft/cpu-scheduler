@@ -522,8 +522,8 @@ def runSimulation(infile, outfile, queues, cpuCount, contextSwitchTime, debug):
 # Run all the tests
 if __name__ == "__main__":
     debug = False
-    debugTiming = True
-    outdir = "results.after" # TODO
+    debugTiming = False
+    outdir = "results"
 
     # We'll just set this here for all the simulations
     contextSwitchTime = 3

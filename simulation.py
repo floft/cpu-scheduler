@@ -573,11 +573,20 @@ if __name__ == "__main__":
                 runTest("debug_fcfs_cpu"+str(cores), queues, cores)
 
         else:
-            # Test different numbers of FCFC queues, also varying number of cores
-            for fcfsCount in [1,3,5,7]:
-                for cores in range(1,18,2):
-                    queues = [QueueFCFS() for i in range(0,fcfsCount)]
-                    runTest("fcfs"+str(fcfsCount)+"_cpu"+str(cores), queues, cores)
+            # Test FCFC varying number of cores
+            for cores in range(1,18,2):
+                queues = [QueueFCFS()]
+                runTest("fcfs_cpu"+str(cores), queues, cores)
+
+            # Test SPN varying number of cores
+            for cores in range(1,18,2):
+                queues = [QueueSPN()]
+                runTest("spn_cpu"+str(cores), queues, cores)
+
+            # Test HRRN varying number of cores
+            for cores in range(1,18,2):
+                queues = [QueueHRRN()]
+                runTest("hrrn_cpu"+str(cores), queues, cores)
 
             # Test RR, RR, FCFS, also varying number of cores
             for tq1, tq2 in [(2,10), (10,2), (5,5), (10,10), (50,50), (50,10), (10,50)]:
@@ -596,6 +605,18 @@ if __name__ == "__main__":
                 for cores in range(1,18,2):
                     queues = [QueueRR(tq1), QueueRR(tq2), QueueHRRN()]
                     runTest("RR"+str(tq1)+"RR"+str(tq2)+"HRRN_cpu"+str(cores), queues, cores)
+
+            # Test RR, RR, SPN, FCFS also varying number of cores
+            for tq1, tq2 in [(2,10), (10,2), (5,5), (10,10), (50,50), (50,10), (10,50)]:
+                for cores in range(1,18,2):
+                    queues = [QueueRR(tq1), QueueRR(tq2), QueueSPN(), QueueFCFS()]
+                    runTest("RR"+str(tq1)+"RR"+str(tq2)+"SPN_FCFS_cpu"+str(cores), queues, cores)
+
+            # Test RR, RR, HRRN, FCFS also varying number of cores
+            for tq1, tq2 in [(2,10), (10,2), (5,5), (10,10), (50,50), (50,10), (10,50)]:
+                for cores in range(1,18,2):
+                    queues = [QueueRR(tq1), QueueRR(tq2), QueueHRRN(), QueueFCFS()]
+                    runTest("RR"+str(tq1)+"RR"+str(tq2)+"HRRN_FCFS_cpu"+str(cores), queues, cores)
 
     # Print when each finishes
     for r in results:

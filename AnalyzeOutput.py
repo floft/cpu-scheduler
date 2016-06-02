@@ -115,64 +115,37 @@ if __name__ == "__main__":
             sns.swarmplot(x=x, y=y, hue=hue, data=data)
             #sns.stripplot(x=x, y=y, hue=hue, data=data, jitter=False, alpha=0.5)
 
-        #
-        # Single FCFS Queue
-        #
-        fig = plt.figure()
-        fig.suptitle("Single FCFS Queue - "+d)
-
-        ax1 = fig.add_subplot(2,2,1)
-        combPlot(x="Cores", y="AvgTurnaround", data=fcfs)
-        ax1.set_title("Avg Turnaround")
-
-        ax2 = fig.add_subplot(2,2,2)
-        combPlot(x="Cores", y="AvgWait", data=fcfs)
-        ax2.set_title("Avg Wait")
-
-        ax3 = fig.add_subplot(2,2,3)
-        combPlot(x="Cores", y="AvgResponse", data=fcfs)
-        ax3.set_title("Avg Response")
-
-        ax4 = fig.add_subplot(2,2,4)
-        combPlot(x="Cores", y="Throughput", data=fcfs)
-        ax4.set_title("Throughput")
-
-        plt.subplots_adjust(wspace=0.3, hspace=0.4)
-
-        #
-        # Multiple FCFS Queues
-        #
-        fig = plt.figure()
-        fig.suptitle("Multiple FCFS Queues - "+d)
-        oneCore = fcfs.loc[lambda df: df.Cores == 1]
-
-        ax1 = fig.add_subplot(2,2,1)
-        combPlot(x="Queues", y="AvgTurnaround", data=oneCore)
-        ax1.set_title("Avg Turnaround")
-
-        ax2 = fig.add_subplot(2,2,2)
-        combPlot(x="Queues", y="AvgWait", data=oneCore)
-        ax2.set_title("Avg Wait")
-
-        ax3 = fig.add_subplot(2,2,3)
-        combPlot(x="Queues", y="AvgResponse", data=oneCore)
-        ax3.set_title("Avg Response")
-
-        ax4 = fig.add_subplot(2,2,4)
-        combPlot(x="Queues", y="Throughput", data=oneCore)
-        ax4.set_title("Throughput")
-
-        plt.subplots_adjust(wspace=0.3, hspace=0.4)
-
-        #
-        # RR, RR, FCFS Queues
-        #
-        #for core in rrrrfcfs['Cores'].unique():
-        if False:
-            oneCore = rrrrfcfs.loc[lambda df: df.Cores == core]
-
+        if len(fcfs.index):
+            #
+            # Single FCFS Queue
+            #
             fig = plt.figure()
-            fig.suptitle("RR RR FCFS Queues for "+str(core)+" cores - "+d)
+            fig.suptitle("Single FCFS Queue - "+d)
+
+            ax1 = fig.add_subplot(2,2,1)
+            combPlot(x="Cores", y="AvgTurnaround", data=fcfs)
+            ax1.set_title("Avg Turnaround")
+
+            ax2 = fig.add_subplot(2,2,2)
+            combPlot(x="Cores", y="AvgWait", data=fcfs)
+            ax2.set_title("Avg Wait")
+
+            ax3 = fig.add_subplot(2,2,3)
+            combPlot(x="Cores", y="AvgResponse", data=fcfs)
+            ax3.set_title("Avg Response")
+
+            ax4 = fig.add_subplot(2,2,4)
+            combPlot(x="Cores", y="Throughput", data=fcfs)
+            ax4.set_title("Throughput")
+
+            plt.subplots_adjust(wspace=0.3, hspace=0.4)
+
+            #
+            # Multiple FCFS Queues
+            #
+            fig = plt.figure()
+            fig.suptitle("Multiple FCFS Queues - "+d)
+            oneCore = fcfs.loc[lambda df: df.Cores == 1]
 
             ax1 = fig.add_subplot(2,2,1)
             combPlot(x="Queues", y="AvgTurnaround", data=oneCore)
@@ -192,50 +165,81 @@ if __name__ == "__main__":
 
             plt.subplots_adjust(wspace=0.3, hspace=0.4)
 
-        fig = plt.figure()
-        fig.suptitle("RR RR FCFS Queues - "+d)
+        if len(rrrrfcfs.index):
+            #
+            # RR, RR, FCFS Queues
+            #
+            #for core in rrrrfcfs['Cores'].unique():
+            if False:
+                oneCore = rrrrfcfs.loc[lambda df: df.Cores == core]
 
-        ax1 = fig.add_subplot(2,2,1)
-        combPlot(hue="Queues", x="Cores", y="AvgTurnaround", data=rrrrfcfs)
-        ax1.set_title("Avg Turnaround")
+                fig = plt.figure()
+                fig.suptitle("RR RR FCFS Queues for "+str(core)+" cores - "+d)
 
-        ax2 = fig.add_subplot(2,2,2)
-        combPlot(hue="Queues", x="Cores", y="AvgWait", data=rrrrfcfs)
-        ax2.set_title("Avg Wait")
+                ax1 = fig.add_subplot(2,2,1)
+                combPlot(x="Queues", y="AvgTurnaround", data=oneCore)
+                ax1.set_title("Avg Turnaround")
 
-        ax3 = fig.add_subplot(2,2,3)
-        combPlot(hue="Queues", x="Cores", y="AvgResponse", data=rrrrfcfs)
-        ax3.set_title("Avg Response")
+                ax2 = fig.add_subplot(2,2,2)
+                combPlot(x="Queues", y="AvgWait", data=oneCore)
+                ax2.set_title("Avg Wait")
 
-        ax4 = fig.add_subplot(2,2,4)
-        combPlot(hue="Queues", x="Cores", y="Throughput", data=rrrrfcfs)
-        ax4.set_title("Throughput")
+                ax3 = fig.add_subplot(2,2,3)
+                combPlot(x="Queues", y="AvgResponse", data=oneCore)
+                ax3.set_title("Avg Response")
 
-        plt.subplots_adjust(wspace=0.3, hspace=0.4)
+                ax4 = fig.add_subplot(2,2,4)
+                combPlot(x="Queues", y="Throughput", data=oneCore)
+                ax4.set_title("Throughput")
+
+                plt.subplots_adjust(wspace=0.3, hspace=0.4)
+
+            fig = plt.figure()
+            fig.suptitle("RR RR FCFS Queues - "+d)
+
+            ax1 = fig.add_subplot(2,2,1)
+            combPlot(hue="Queues", x="Cores", y="AvgTurnaround", data=rrrrfcfs)
+            ax1.set_title("Avg Turnaround")
+
+            ax2 = fig.add_subplot(2,2,2)
+            combPlot(hue="Queues", x="Cores", y="AvgWait", data=rrrrfcfs)
+            ax2.set_title("Avg Wait")
+
+            ax3 = fig.add_subplot(2,2,3)
+            combPlot(hue="Queues", x="Cores", y="AvgResponse", data=rrrrfcfs)
+            ax3.set_title("Avg Response")
+
+            ax4 = fig.add_subplot(2,2,4)
+            combPlot(hue="Queues", x="Cores", y="Throughput", data=rrrrfcfs)
+            ax4.set_title("Throughput")
+
+            plt.subplots_adjust(wspace=0.3, hspace=0.4)
 
 
-        #
-        # RR, RR, SPN Queues
-        #
-        fig = plt.figure()
-        fig.suptitle("RR RR SPN Queues - "+d)
+        if len(rrrrspn.index):
+            #
+            # RR, RR, SPN Queues
+            #
+            fig = plt.figure()
+            fig.suptitle("RR RR SPN Queues - "+d)
 
-        ax1 = fig.add_subplot(2,2,1)
-        combPlot(hue="Queues", x="Cores", y="AvgTurnaround", data=rrrrspn)
-        ax1.set_title("Avg Turnaround")
+            ax1 = fig.add_subplot(2,2,1)
+            combPlot(hue="Queues", x="Cores", y="AvgTurnaround", data=rrrrspn)
+            ax1.set_title("Avg Turnaround")
 
-        ax2 = fig.add_subplot(2,2,2)
-        combPlot(hue="Queues", x="Cores", y="AvgWait", data=rrrrspn)
-        ax2.set_title("Avg Wait")
+            ax2 = fig.add_subplot(2,2,2)
+            combPlot(hue="Queues", x="Cores", y="AvgWait", data=rrrrspn)
+            ax2.set_title("Avg Wait")
 
-        ax3 = fig.add_subplot(2,2,3)
-        combPlot(hue="Queues", x="Cores", y="AvgResponse", data=rrrrspn)
-        ax3.set_title("Avg Response")
+            ax3 = fig.add_subplot(2,2,3)
+            combPlot(hue="Queues", x="Cores", y="AvgResponse", data=rrrrspn)
+            ax3.set_title("Avg Response")
 
-        ax4 = fig.add_subplot(2,2,4)
-        combPlot(hue="Queues", x="Cores", y="Throughput", data=rrrrspn)
-        ax4.set_title("Throughput")
+            ax4 = fig.add_subplot(2,2,4)
+            combPlot(hue="Queues", x="Cores", y="Throughput", data=rrrrspn)
+            ax4.set_title("Throughput")
 
-        plt.subplots_adjust(wspace=0.3, hspace=0.4)
+            plt.subplots_adjust(wspace=0.3, hspace=0.4)
+
     # Show all plots at the end
     plt.show()

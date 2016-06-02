@@ -294,10 +294,10 @@ def loadProcessesFromCSV(fn):
 # analysis from the simulation since the simulation will likely take a while.
 def writeResultsToCSV(results, fn):
     with open(fn, 'w') as f:
-        f.write("PID,Submitted,Started,Completed,Queues,Executing,IO\r\n")
+        f.write("PID,Submitted,Started,Completed,Queues,Executing,IO\n")
 
         for p in results:
-            f.write(repr(p) + "\r\n")
+            f.write(repr(p) + "\n")
 
 # Load a file, run the simulation, output the results to a file
 def runSimulation(infile, outfile, queues, cpuCount, contextSwitchTime, debug):

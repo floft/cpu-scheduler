@@ -59,7 +59,7 @@ if __name__ == "__main__":
                         else:
                             l.append(np.random.randint(1,maxTimeIO))
 
-                    f.write(",".join(str(x) for x in l) + "\r\n")
+                    f.write(",".join(str(x) for x in l) + "\n")
 
     #
     # Generate example output file for initial plotting
@@ -80,7 +80,7 @@ if __name__ == "__main__":
             maxExecuting = 500
             maxWaitIO = 10
 
-            f.write("PID,Submitted,Started,Completed,Queues,Executing,IO\r\n")
+            f.write("PID,Submitted,Started,Completed,Queues,Executing,IO\n")
 
             for pid in range(0, count):
                 arrival += np.random.randint(1,maxArrivalInc)
@@ -99,4 +99,4 @@ if __name__ == "__main__":
                 l.append(waitingQueues)
                 l.append(executing)
                 l.append(waitingIO)
-                f.write(",".join(str(x) for x in l) + "\r\n")
+                f.write(",".join(str(x) for x in l) + "\n")

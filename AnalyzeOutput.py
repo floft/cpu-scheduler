@@ -58,7 +58,7 @@ def processFiles(directory, files):
 if __name__ == "__main__":
     # Plot all the data
     dirs = sys.argv[1:]
-    outdir = "plots"
+    outdir_prefix = "plots"
     outdir_cores = "cores"
     outdir_queues = "queues"
     outdir_single = "single"
@@ -66,18 +66,19 @@ if __name__ == "__main__":
     if not dirs:
         print("Pass in result directory names as arguments.")
 
-    # Make sure output directory exists
-    if not os.path.exists(outdir):
-        os.makedirs(outdir)
-    if not os.path.exists(os.path.join(outdir, outdir_cores)):
-        os.makedirs(os.path.join(outdir, outdir_cores))
-    if not os.path.exists(os.path.join(outdir, outdir_queues)):
-        os.makedirs(os.path.join(outdir, outdir_queues))
-    if not os.path.exists(os.path.join(outdir, outdir_single)):
-        os.makedirs(os.path.join(outdir, outdir_single))
-
     for d in dirs:
         files = os.listdir(d)
+        outdir = outdir_prefix + "_" + d.strip().replace("/","")
+
+        # Make sure output directory exists
+        if not os.path.exists(outdir):
+            os.makedirs(outdir)
+        if not os.path.exists(os.path.join(outdir, outdir_cores)):
+            os.makedirs(os.path.join(outdir, outdir_cores))
+        if not os.path.exists(os.path.join(outdir, outdir_queues)):
+            os.makedirs(os.path.join(outdir, outdir_queues))
+        if not os.path.exists(os.path.join(outdir, outdir_single)):
+            os.makedirs(os.path.join(outdir, outdir_single))
 
         # FCFS with different numbers of cores
         re_fcfs = re.compile(".*_fcfs_cpu([0-9]*)\.csv")

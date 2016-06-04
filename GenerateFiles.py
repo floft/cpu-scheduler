@@ -22,44 +22,48 @@ if __name__ == "__main__":
     # Generate process files for running through the simulation
     #
     if generateInput:
-        # Parameters for each file
-        maxFiles = 5
-        count = 1000
-        maxTimeExec = 50
-        maxTimeIO = 10
-        maxSwitches = 5
-        maxArrivalInc = 5
+        for maxArrivalInc in [5, 500]:
+            # Parameters for each file
+            maxFiles = 5
+            count = 1000
+            maxTimeExec = 50
+            maxTimeIO = 10
+            maxSwitches = 5
+            #maxArrivalInc = 5
 
-        # Make sure the directory exists
-        if not os.path.exists(directory):
-            os.makedirs(directory)
+            d = directory + "." + str(maxTimeExec) + "_" + str(maxTimeIO) + "_" \
+                + str(maxSwitches) + "_" + str(maxArrivalInc)
 
-        for fn in range(0,maxFiles):
-            with open(os.path.join(directory,str(fn)+".txt"), "w") as f:
-                # Initialize for each file
-                arrival = 0
+            # Make sure the directory exists
+            if not os.path.exists(d):
+                os.makedirs(d)
 
-                for pid in range(0, count):
-                    # How many times we have, starting with CPU and then alternating
-                    # between CPU and IO
-                    switches = np.random.randint(1,maxSwitches)
+            for fn in range(0,maxFiles):
+                with open(os.path.join(d,str(fn)+".txt"), "w") as f:
+                    # Initialize for each file
+                    arrival = 0
 
-                    # Choose how long after the last process arived to make this
-                    # process arrive
-                    arrival += np.random.randint(1,maxArrivalInc)
+                    for pid in range(0, count):
+                        # How many times we have, starting with CPU and then alternating
+                        # between CPU and IO
+                        switches = np.random.randint(1,maxSwitches)
 
-                    # Create the proccess line
-                    l = []
-                    l.append(pid)
-                    l.append(arrival)
+                        # Choose how long after the last process arived to make this
+                        # process arrive
+                        arrival += np.random.randint(1,maxArrivalInc)
 
-                    for j in range(0,switches):
-                        if j%2 == 0:
-                            l.append(np.random.randint(1,maxTimeExec))
-                        else:
-                            l.append(np.random.randint(1,maxTimeIO))
+                        # Create the proccess line
+                        l = []
+                        l.append(pid)
+                        l.append(arrival)
 
-                    f.write(",".join(str(x) for x in l) + "\n")
+                        for j in range(0,switches):
+                            if j%2 == 0:
+                                l.append(np.random.randint(1,maxTimeExec))
+                            else:
+                                l.append(np.random.randint(1,maxTimeIO))
+
+                        f.write(",".join(str(x) for x in l) + "\n")
 
     #
     # Generate example output file for initial plotting

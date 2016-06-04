@@ -2,6 +2,7 @@
 # Discrete event simulation of CPU scheduling
 #
 import os
+import sys
 import numpy as np
 import multiprocessing
 
@@ -523,7 +524,19 @@ def runSimulation(infile, outfile, queues, cpuCount, contextSwitchTime, debug):
 if __name__ == "__main__":
     debug = False
     debugTiming = False
-    outdir = "results"
+
+    # Get input/output directories from the arguments
+    dirs = sys.argv[1:]
+
+    if not dirs or len(dirs) != 2:
+        print("Usage: simulation.py input_processes/ output_results/")
+        sys.exit(1)
+
+    indir = dirs[0]
+    outdir = dirs[1]
+
+    print("Input:", indir)
+    print("Output:", outdir)
 
     # We'll just set this here for all the simulations
     contextSwitchTime = 3
@@ -544,7 +557,7 @@ if __name__ == "__main__":
     # Run on each of the 5 randomly-generated input files of processes
     for fn in range(0,5):
         testfile = str(fn)
-        infile = os.path.join("processes", testfile+".txt")
+        infile = os.path.join(indir, testfile+".txt")
 
         # Does the input exist?
         if not os.path.isfile(infile):

@@ -195,7 +195,19 @@ if __name__ == "__main__":
         rrrrhrrnfcfs = processFiles(d, rrrrhrrnfcfs_files)
 
         # Plots
-        def combPlot(x, y, data, hue=None):
+        def combPlot(x, y, data, hue=None, onlyAverage=False):
+            # For Alexander, if she really only wanted to see one value for
+            # each x value, averaging averages.
+            #
+            # Note: the reset_index() is required to make Seaborn be able to
+            # plot the data for some reason.
+            # http://stackoverflow.com/a/10374456
+            if onlyAverage:
+                if hue:
+                    data = pd.DataFrame(data.groupby([x,hue]).mean().reset_index())
+                else:
+                    data = pd.DataFrame(data.groupby(x).mean().reset_index())
+
             #sns.violinplot(x=x, y=y, data=data, hue=hue, inner=None)
             #sns.swarmplot(x=x, y=y, data=data, hue=hue, color="w", alpha=.5)
             sns.swarmplot(x=x, y=y, hue=hue, data=data)
